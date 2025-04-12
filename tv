@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jasmine - Login Required</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #loginForm {
+            display: none;
+            flex-direction: column;
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        #loginForm input, #loginForm button {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+        #loginForm button {
+            background-color: #555;
+            color: white;
+            cursor: pointer;
+        }
+        #playerContainer {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        video {
+            width: 80%;
+            height: 70%;
+            background-color: black;
+            margin-bottom: 10px;
+        }
+        #channelList {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .channel-name {
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 10px 15px;
+            border: 1px solid white;
+            border-radius: 5px;
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+        .channel-name:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login Form -->
+    <div id="loginForm">
+        <h2 style="color: white;">Login</h2>
+        <input type="text" id="username" placeholder="Username"  />
+        <input type="password" id="password" placeholder="Password" />
+        <button id="loginButton">Login</button>
+    </div>
+
+    <!-- Video Player Container -->
+    <div id="playerContainer">
+        <video id="videoPlayer" controls></video>
+        <div id="channelList"></div>
+    </div>
+
+    <!-- Include hls.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+    <script type="text/javascript">
+        const loginForm = document.getElementById('loginForm');
+        const playerContainer = document.getElementById('playerContainer');
+        const loginButton = document.getElementById('loginButton');
+        const video = document.getElementById('videoPlayer');
+        const channelList = document.getElementById('channelList');
+
+        const validUsername = "admin";
+        const validPassword = "pass";
+
+        const macAddress = "00-FF-33-D7-5A-5D"; // Your TV's MAC address  //00:c3:f4:e4:54:38
+
+     
+        const channels = [
+          { name: 'Afghan Nobel Movies', url: 'https://live.relentlessinnovations.net:1936/afghannobel/afghannobel/playlist.m3u8' },
+	  { name: 'Bahar ', url: 'https://59d39900ebfb8.streamlock.net/bahartv/bahartv/chunklist_w2056151197.m3u8' },
+	  { name: 'Kayhan', url: 'https://playout395.livestreamingcdn.com/live/Stream1/playlist.m3u8' },
+	  { name: 'Asia Music', url: 'https://amchls.wns.live/hls/stream.m3u8' },
+
+		{ name: 'Arabic Bollywood', url: 'https://shls-mbcbollywood-prod-dub.shahid.net/out/v1/a79c9d7ef2a64a54a64d5c4567b3462a/index.m3u8' },
+		{ name: 'Bollywood HD', url: 'https://d35j504z0x2vu2.cloudfront.net/v1/master/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-hd/manifest.m3u8' },
+		{ name: 'Bollywood Classic', url: 'https://d35j504z0x2vu2.cloudfront.net/v1/master/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-classic/manifest.m3u8' },
+		{ name: 'Joo', url: 'https://livecdn.live247stream.com/joomusic/tv/playlist.m3u8' },
+	        { name: 'Shemaroo Bollywood', url: 'https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/shemaroo-bollywood/b76c4ad2-cc0a-43e3-888f-f3e322cfa56f/0.m3u8
+                { name: 'Shemaroo Bollywood 1', url: 'https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg00864-shemarooenterta-shemabollywood-ono/playlist.m3u8' },
+	        { name: 'B4U Kadak', url: 'https://cdn-2.pishow.tv/live/227/master.m3u8' },
+	        { name: 'YRF', url: 'https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg01412-xiaomiasia-yrfmusic-xiaomi/playlist.m3u8' },
+		{ name: 'Local', url: 'https://dbrb49pjoymg4.cloudfront.net/v1/manifest/3fec3e5cac39a52b2132f9c66c83dae043dc17d4/prod_default_xumo-ams-aws/7be04f99-5bf2-430b-86dd-4e1577159f1b/4.m3u8' },
+	        { name: 'Filmi Gani', url: 'https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/shemaroo-filmigaane/c80a70b7-08fa-4f36-8578-88a3da022708/0.m3u8' },
+		
+		{ name: 'Zoo Mo', url: 'https://amg01553-blueantmediaasi-zoomoonz-samsungnz-rdufn.amagi.tv/playlist/amg01553-blueantmediaasi-zoomoonz-samsungnz/playlist.m3u8' },
+		{ name: 'WWE', url: 'https://d2p372oxiwmcn1.cloudfront.net/hls/1080p/playlist.m3u8' },
+		{ name: 'MNN MOVIES', url: 'http://mmn.mypsx.net:1935/live/mmnhdaction/playlist.m3u8' },
+		{ name: 'Comedy', url: 'https://cdn-ue1-prod.tsv2.amagi.tv/linear/amg00353-lionsgatestudio-arewethereyetnl-samsungnl/playlist.m3u8' },
+                { name: 'Dunia cinema', url: 'https://unifi-live05.secureswiftcontent.com/UnifiHD/live27-1080FHD.m3u8' }	
+        ];
+
+
+
+
+
+
+
+
+
+
+
+	    
+
+        // Populate the channel list
+        channels.forEach(channel => {
+            const channelElement = document.createElement('div');
+            channelElement.textContent = channel.name;
+            channelElement.classList.add('channel-name');
+            channelElement.addEventListener('click', () => loadVideo(channel.url));
+            channelList.appendChild(channelElement);
+        });
+
+        function loadVideo(url) {
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+                video.addEventListener('loadedmetadata', () => video.play());
+            } else {
+                console.error('Your browser does not support HLS.');
+            }
+        }
+
+        loginButton.addEventListener('click', () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username === validUsername && password === validPassword) {
+                localStorage.setItem('authenticated', 'true');
+                showPlayer();
+            } else {
+                alert('Invalid username or password.');
+            }
+        });
+
+        function showPlayer() {
+            loginForm.style.display = 'none';
+            playerContainer.style.display = 'flex';
+            loadVideo(channels[0].url); // Auto-play first channel
+        }
+
+        window.onload = () => {
+            const isAuthenticated = localStorage.getItem('authenticated');
+            const deviceMAC = "00-FF-33-D7-5A-5D"; // Simulate TV MAC
+
+           
+                showPlayer();
+          
+        };
+
+        playerContainer.addEventListener('dblclick', () => {
+            if (!document.fullscreenElement) {
+                playerContainer.requestFullscreen().catch(err => console.error(err));
+            } else {
+                document.exitFullscreen();
+            }
+        });
+    </script>
+
+</body>
+</html>
